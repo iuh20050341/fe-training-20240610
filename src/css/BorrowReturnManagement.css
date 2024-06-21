@@ -1,0 +1,23 @@
+.borrow-return-container {
+    padding: 20px;
+  }
+  
+  .borrow-inputs {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .borrow-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .borrow-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+  }
+  

@@ -1,0 +1,26 @@
+.content-container {
+    display: flex;
+    background-color: #F0FFFF;
+  }
+  
+  .left-menu {
+    width: 20%;
+    background-color: #A9A9A9;
+    margin: 20px;
+  }
+  
+  .main-content {
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .searchinput {
+    align-self: flex-end; /* Align the search input to the right */
+    margin-bottom: 20px; /* Optional: Add some space below the search input */
+  }
+  
+  .searchinput input {
+    margin-left: auto; /* Ensure the input field inside the searchinput div is also aligned to the right */
+  }
+  
