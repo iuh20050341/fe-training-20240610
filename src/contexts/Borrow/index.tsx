@@ -2,7 +2,10 @@ import React, { createContext, useState, Dispatch, SetStateAction, ReactNode } f
 
 interface BorrowedBook {
   id: number;
+  idUser: number;
   borrower: string;
+  quantity: number;
+  price: number;
   book: string;
   borrowDate: string;
 }
@@ -18,26 +21,17 @@ const BorrowProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [borrowedBooks, setBorrowedBooks] = useState<BorrowedBook[]>([
     {
       id: 1,
-      borrower: 'John Doe',
+      borrower: 'nam',
       book: 'The Great Gatsby',
-      borrowDate: '2024-05-16'
-    },
-    {
-      id: 2,
-      borrower: 'Jane Smith',
-      book: 'To Kill a Mockingbird',
-      borrowDate: '2023-09-30'
-    },
-    {
-      id: 3,
-      borrower: 'Alice Johnson',
-      book: '1984',
-      borrowDate: '2024-02-05'
-    },
+      quantity: 2,
+      price: 2000,
+      borrowDate: '2024-06-23',
+      idUser: 2
+    }
   ]);
 
   return (
-    <BorrowContext.Provider value={{ borrowedBooks, setBorrowedBooks }}>
+    <BorrowContext.Provider value={{ borrowedBooks, setBorrowedBooks }}>  
       {children}
     </BorrowContext.Provider>
   );

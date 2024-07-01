@@ -1,5 +1,4 @@
 import React, { useContext } from 'react';
-import PropTypes from 'prop-types';
 import { AccountContext, AccountContextType } from '../../../contexts/Account/index.tsx';
 import { Card, CardContent, Typography, Grid, Avatar, Box } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -26,6 +25,11 @@ const UserProfile = () => {
               User Profile
             </Typography>
           </Grid>
+          <Grid item xs>
+            <Typography variant="h4" component="div">
+              {user?.rules === 1 ? 'ADMIN' : 'CUSTOMER'}
+            </Typography>
+          </Grid>
         </Grid>
         <Box mt={4} sx={{textAlign:'left'}}>
           <Grid container spacing={2}>
@@ -49,12 +53,6 @@ const UserProfile = () => {
       </CardContent>
     </Card>
   );
-};
-
-UserProfile.propTypes = {
-  username: PropTypes.string.isRequired,
-  email: PropTypes.string.isRequired,
-  phone: PropTypes.string.isRequired,
 };
 
 export default UserProfile;

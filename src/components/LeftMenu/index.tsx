@@ -23,7 +23,7 @@ const LeftMenu: React.FC = () => {
       </Typography>
       <List>
         {topBorrowedBooks.map((book) => (
-          <Link to={`/product/${book.id}`} style={{ textDecoration: 'none' }}>
+          <Link key={book.id} to={`/product/${book.id}`} style={{ textDecoration: 'none' }}>
             <ListItem key={book.id}>
               <ListItemAvatar>
                 <Avatar sx={{height:80, width:50}} src={book.image} alt={book.name} variant="rounded" />

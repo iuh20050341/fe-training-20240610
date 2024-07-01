@@ -6,7 +6,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AccountContext, AccountContextType } from '../../contexts/Account/index.tsx';
+import RadioList from "../../components/Input/Radio/radiolist.tsx"
+import registerApi from '../../api/registerApi.ts';
+import { Register } from '../../types/register.type.ts';
 
+type FormStateType = Omit<Register, 'id' | 'createdAt'> | Register
 function SignupForm() {
   const context = useContext(AccountContext) as AccountContextType;
   if (!context) {
@@ -14,35 +18,58 @@ function SignupForm() {
   }
   const { accounts, setAccounts } = context;
 
-  const { register, handleSubmit, formState: { errors }, control } = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormStateType>({
     defaultValues: {
-      username: '',
+      name: '',
       password: '',
       email: '',
-      phone: ''
+      age: 0,
+      gender: '',
+      address: '',
     }
   });
-
-  const username = useWatch({ control: control, name: 'username' });
+  
   const navigate = useNavigate();
-  console.log({ username });
-
-  const onSubmit = (data) => {
-    const userExists = accounts.some(account => account.username === data.username);
-    if (userExists) {
-      toast.error('Username đã tồn tại');
-    } else {
-      const newAccountId = accounts.length + 1;
-      setAccounts([...accounts, {...data, id: newAccountId}]);
-      setTimeout(() => {
-        navigate('/login'); 
-        toast.success('Tạo tài khoản thành công');
-      }, 1500);
-      console.log('Form Data:', data);
-    }
+  const handleGenderChange = (value: string) => {
+    setValue('gender', value);
   };
-
-  return (
+  const onSubmit = async (data: FormStateType) => {
+    try {
+      const response = await registerApi.add(data);
+      if (response) {
+        console.log('Register',response);
+        
+        setTimeout(() => {
+          navigate('/login');
+          toast.success('Đăng ký thành công');
+        }, 1500);
+      } else {
+        toast.error('Đăng ký thất bại');
+      }
+    } catch (error) {
+      toast.error('Đăng ký thất bại');
+    }
+    console.log('Form Data:', data);
+    // const userExists = accounts.some(account => account.username === data.username);
+    // if (userExists) {
+    //   setTimeout(() => {
+    //     toast.error('Username đã tồn tại');
+    //   }, 1000);
+    // } else {
+    //   const newAccountId = accounts.length + 1;
+    //   setAccounts([...accounts, {...data, id: newAccountId, rules: 0}]);
+    //   setTimeout(() => {
+    //     navigate('/login'); 
+    //     toast.success('Tạo tài khoản thành công');
+    //   }, 1500);
+    //   console.log('Form Data:', data);
+    // }
+  };
+  const genderList = [
+    { label: 'Male', value: 'MALE' },
+    { label: 'Female', value: 'FEMALE' },
+    { label: 'Other', value: 'OTHER' },
+  ];  return (
     <Container maxWidth="sm">
       <Paper elevation={3} sx={{ padding: 4, marginTop: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
@@ -54,9 +81,9 @@ function SignupForm() {
               id="username" 
               label="Username" 
               variant="outlined" 
-              {...register('username', { required: 'Username is required' })} 
-              error={!!errors.username}
-              helperText={errors.username ? errors.username.message : ''}
+              {...register('name', { required: 'Username is required' })} 
+              error={!!errors.name}
+              helperText={errors.name ? errors.name.message : ''}
             />
             <TextField 
               id="email" 
@@ -73,10 +100,10 @@ function SignupForm() {
               error={!!errors.email}
               helperText={errors.email ? errors.email.message : ''}
             />
-            <TextField 
+            {/* <TextField 
               id="phone" 
               label="Phone" 
-              type="tel" 
+              type="number" 
               variant="outlined" 
               {...register('phone', { 
                 required: 'Phone is required',
@@ -87,15 +114,52 @@ function SignupForm() {
               })} 
               error={!!errors.phone}
               helperText={errors.phone ? errors.phone.message : ''}
-            />
+              sx={{
+                textAlign: 'center',
+                '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
+                  '-webkit-appearance': 'none',
+                  margin: 0,
+                },
+                '& input[type=number]': {
+                  '-moz-appearance': 'textfield',
+                }
+              }}
+            /> */}
             <TextField 
-              id="password" 
+              id="age" 
+              label="Age" 
+              type="number" 
+              variant="outlined" 
+              {...register('age', {required: 'Age is required'})} 
+              error={!!errors.age}
+              helperText={errors.age ? errors.age.message : ''}
+            />        
+            <TextField 
+              id="address" 
+              label="Address" 
+              type="text" 
+              variant="outlined" 
+              {...register('address', {required: 'Address is required'})} 
+              error={!!errors.address}
+              helperText={errors.address ? errors.address.message : ''}
+            />        
+            <RadioList label="Gender:" name="gender" items={genderList} onChange={handleGenderChange} />
+            <TextField 
+              id="password"   
               type="password" 
               label="Password" 
               variant="outlined" 
-              {...register('password', { required: 'Password is required' })} 
+              {...register('password', 
+                { required: 'Password is required',
+                  pattern: {
+                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,15}$/,
+                    message: 'Invalid password'
+                  } 
+                },
+              )} 
               error={!!errors.password}
               helperText={errors.password ? errors.password.message : ''}
+              
             />
             <Button variant="contained" color="primary" type="submit" sx={{ marginTop: 2 }}>
               Submit

@@ -4,6 +4,7 @@ import { useContext, useState, useEffect, useCallback } from 'react';
 import { Button, TextField } from '@mui/material';
 import { ReturnListContext } from '../../contexts/ReturnedList/index.tsx';
 import { BookContext } from '../../contexts/Book/index.tsx';
+import { AccountContext, AccountContextType } from '../../contexts/Account/index.tsx';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ReturnedList = () => {
@@ -15,8 +16,13 @@ const ReturnedList = () => {
     if (!contextBook) {
       throw new Error('Error');
   }
+  const contextAccount = useContext(AccountContext) as AccountContextType;
+  if (!contextAccount) {
+  throw new Error('Errors');
+  }
     const { returnLists } = context;
-    const [returnList, setReturnList] = useState(returnLists);
+    const { loggedID } = contextAccount;
+    const [returnList, setReturnList] = useState(returnLists.filter(returns => returns.idUser === loggedID));
     const [currentPage, setCurrentPage] = useState(1);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -25,14 +31,18 @@ const ReturnedList = () => {
         { field: 'id', headerName: 'ID' },
         { field: 'borrower', headerName: 'Borrower' },
         { field: 'book', headerName: 'Book' },
-        { field: 'returnDate', headerName: 'ReturnDate' }      
-      
+        { field: 'price', headerName: 'Price' },      
+        { field: 'quantity', headerName: 'Quantity' },
+        { field: 'borrowDate', headerName: 'BorrowDate' },      
+        { field: 'returnDate', headerName: 'ReturnDate' },      
+        { field: 'totalPrice', headerName: 'TotalPrice' }      
+
       ];
       const actionList =[
         ''
       ]
       const handleFilter = useCallback(() => {
-        const filteredBooks = returnLists.filter(book => {
+        const filteredBooks = returnList.filter(book => {
           const returnDate = new Date(book.returnDate);
           const start = startDate ? new Date(startDate) : null;
           const end = endDate ? new Date(endDate) : null;
@@ -45,11 +55,11 @@ const ReturnedList = () => {
         });
     
         setReturnList(filteredBooks);
-      }, [returnLists, searchQuery, endDate, startDate]);
+      }, [returnList, searchQuery, endDate, startDate]);
       
       useEffect(() => {
-        setReturnList(returnLists)
-      }, [returnLists]);
+        setReturnList(returnLists.filter(returns => returns.idUser === loggedID))
+      }, [returnLists, loggedID]);
   return (
     <div>
       <div className="filter-inputs" style={{marginLeft:'20px', marginBottom:'20px'}}>
@@ -73,13 +83,13 @@ const ReturnedList = () => {
             label="Search by Borrower or Book"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{marginTop:'5px'}}
+            style={{marginLeft:'10px'}}
           />
             <Button variant="contained" color="primary" onClick={handleFilter} style={{marginLeft:'10px', marginTop:'10px'}}>
             Filter
           </Button>
         </div>
-        <Table columns={columns} data={returnList} onEdit={''} onDelete={''} onReturn={''} onAction={actionList} currentPage={currentPage} setCurrentPage={setCurrentPage}  />
+        <Table isButtonDisabled={''} columns={columns} data={returnList} onEdit={''} onDelete={''} onReturn={''} onRead={''} onAction={actionList} currentPage={currentPage} setCurrentPage={setCurrentPage}  />
     </div>
 );
 };

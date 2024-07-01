@@ -5,6 +5,8 @@ import { BorrowContext } from '../../contexts/Borrow/index.tsx';
 import { Typography, Button, TextField } from '@mui/material';
 import { BookContext } from '../../contexts/Book/index.tsx';
 import { ReturnListContext } from '../../contexts/ReturnedList/index.tsx';
+import { AccountContext, AccountContextType } from '../../contexts/Account/index.tsx';
+import { TicketContext, TicketContextType } from '../../contexts/Ticket/index.tsx';
 import { toast } from 'react-toastify';
 import CustomizedDialogs from '../../components/ModalDialog/index.tsx'
 import 'react-toastify/dist/ReactToastify.css';
@@ -23,58 +25,99 @@ const ReturnManagementList = () => {
     if (!contextReturn) {
       throw new Error('ReturnManagementList must be used within a BorrowProvider');
     }
+    const contextAccount = useContext(AccountContext) as AccountContextType;
+    if (!contextAccount) {
+    throw new Error('Errors');
+    }
+    const contextTicket = useContext(TicketContext) as TicketContextType;
+    if (!contextTicket) {
+      throw new Error('ERROR!');
+    }
+    const { tickets, setTickets} = contextTicket;
     const { borrowedBooks, setBorrowedBooks } = context;
     const { books, setBooks } = contextBook;
-    const [returnList, setReturnList] = useState(borrowedBooks);
+    const { loggedID } = contextAccount;
+    const [returnList, setReturnList] = useState(borrowedBooks.filter(book => book.idUser === loggedID));
     const [currentPage, setCurrentPage] = useState(1);
     const { returnLists, setReturnLists } = contextReturn;
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+
     const columns = [
         { field: 'id', headerName: 'ID' },
         { field: 'borrower', headerName: 'Borrower' },
         { field: 'book', headerName: 'Book' },
-        { field: 'borrowDate', headerName: 'BorrowDate' }      
-      
+        { field: 'price', headerName: 'Price' },      
+        { field: 'quantity', headerName: 'Quantity' },      
+        { field: 'borrowDate', headerName: 'BorrowDate' },      
+        { field: 'totalPrice', headerName: 'TotalPriceNow' }      
+
       ];
+      
       const actionList =[
         'Return'
       ]
-      
-      const handleReturnBook = (id, bookName, borrower) => {
+      console.log(loggedID);
+      const handleReturnBook = (id, bookName, borrower, quantity, price, borrowDate) => {
+        setIsButtonDisabled(true);
+        const toDate = new Date().toISOString().split('T')[0]; // Lấy ngày hiện tại theo định dạng YYYY-MM-DD
         const updatedBooks = borrowedBooks.filter(book => book.id !== id);
+        const updateTickets = tickets.map(ticket => {
+          if(ticket.borrowID === id){
+            return { ...ticket, returnDate: toDate, status: true}
+          }
+          return  ticket;
+        })
         const updatedQuantityBooks = books.map(book => {
           if (book.name === bookName) {
-              return { ...book, quantity: book.quantity + 1 };
+              return { ...book, quantity: book.quantity + quantity };
           }
           return book;
         })
         const maxId = returnLists.length > 0 ? Math.max(...returnLists.map(book => book.id)) : 0;
-          const toDate = new Date().toISOString().split('T')[0]; // Lấy ngày hiện tại theo định dạng YYYY-MM-DD
           const newEntry = {
             id: maxId + 1,
+            idUser: Number(loggedID),
             borrower: borrower,
+            quantity: quantity,
+            price: price,
             book: bookName,
+            borrowDate: borrowDate,
             returnDate: toDate
           };
         setBorrowedBooks(updatedBooks);
         setBooks(updatedQuantityBooks);
+        setTickets(updateTickets)
         setReturnLists([
           ...returnLists,
           newEntry,
         ]);
         setTimeout(() => {
           toast.success('Trả sách thành công')
-        }, 1500);
+          setIsButtonDisabled(false);
+        }, 2000);
       };
       const handleFilter = useCallback(() => {
-        const filteredBooks = borrowedBooks.filter(book => {
+        if ((startDate && !endDate) || (!startDate && endDate)) {
+          setTimeout(() => {
+            toast.error('Vui lòng nhập đầy đủ ngày bắt đầu và ngày kết thúc!')
+          }, 1000);          
+          return;
+        }
+        if (!startDate && !endDate && !searchQuery){
+          setTimeout(() => {
+            toast.error('Vui lòng nhập đầy đủ thông tin tìm kiếm!')
+          }, 1000);          
+          return;
+        }
+          const filteredBooks = returnList.filter(book => {
           const borrowDate = new Date(book.borrowDate);
           const start = startDate ? new Date(startDate) : null;
           const end = endDate ? new Date(endDate) : null;
           const search = searchQuery.toLowerCase();
-    
+
           const matchesSearch = search ? book.borrower.toLowerCase().includes(search) || book.book.toLowerCase().includes(search) : true;
           const matchesDateRange = (!start || borrowDate >= start) && (!end || borrowDate <= end);
     
@@ -82,15 +125,17 @@ const ReturnManagementList = () => {
         });
     
         setReturnList(filteredBooks);
-      }, [borrowedBooks, searchQuery, startDate, endDate]);
-      
+      }, [returnList, searchQuery, startDate, endDate]);
+
       useEffect(() => {
-        setReturnList(borrowedBooks)
-      }, [borrowedBooks]);
+          setReturnList(borrowedBooks.filter(book => book.idUser === loggedID))
+      },[borrowedBooks, loggedID])
+
       const handleReset = () => {
         setStartDate('');
         setEndDate('');
         setSearchQuery('');
+        setReturnList(borrowedBooks.filter(book => book.idUser === loggedID))
       };
   return (
     <div>
@@ -127,10 +172,10 @@ const ReturnManagementList = () => {
             Reset
           </Button>
           <div style={{marginTop:'20px'}}>
-            <CustomizedDialogs button='Returned List' title='Returned List' content={<ReturnedList />} />
+            <CustomizedDialogs button='Returned List' title='Returned List' action='' handleSave={() =>{}} content={<ReturnedList />} />
           </div>
         </div>
-        <Table columns={columns} data={returnList} onEdit={''} onDelete={''} onReturn={handleReturnBook} onAction={actionList} currentPage={currentPage} setCurrentPage={setCurrentPage}  />
+        <Table  isButtonDisabled={isButtonDisabled} columns={columns} data={returnList} onEdit={''} onDelete={''} onRead={''} onReturn={handleReturnBook} onAction={actionList} currentPage={currentPage} setCurrentPage={setCurrentPage}  />
     </div>
 );
 };

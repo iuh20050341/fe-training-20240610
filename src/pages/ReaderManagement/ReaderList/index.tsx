@@ -1,9 +1,9 @@
 import React from 'react';
 import Table from '../../../components/Table/index.tsx';
 
-const ReaderList = ({ readers, onEdit, onDelete, currentPage, onAction, setCurrentPage, heads }) => {
+const ReaderList = ({ isButtonDisabled, readers, onEdit, onDelete, currentPage, onAction, setCurrentPage, heads }) => {
   return (
-    <Table columns={heads} data={readers} onEdit={onEdit} onReturn={''} onAction={onAction} currentPage={currentPage} setCurrentPage={setCurrentPage} onDelete={onDelete} />
+    <Table isButtonDisabled={isButtonDisabled} columns={heads} data={readers} onEdit={onEdit} onRead ={''} onReturn={''} onAction={onAction} currentPage={currentPage} setCurrentPage={setCurrentPage} onDelete={onDelete} />
 );
 };
 

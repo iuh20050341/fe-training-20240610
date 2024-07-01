@@ -5,16 +5,16 @@ import { useForm, Controller } from 'react-hook-form';
 const ReaderForm = ({ open, handleClose, onSave, readerToEdit }) => {
   const { control, handleSubmit, reset, setValue } = useForm({
     defaultValues: {
-      username: '',
-      phone: '',
+      name: '',
+      address: '',
       email: ''
     }
   });
 
   useEffect(() => {
     if (readerToEdit) {
-      setValue('username', readerToEdit.username);
-      setValue('phone', readerToEdit.phone);
+      setValue('name', readerToEdit.name);
+      setValue('address', readerToEdit.address);
       setValue('email', readerToEdit.email);
     } else {
       reset();
@@ -33,7 +33,7 @@ const ReaderForm = ({ open, handleClose, onSave, readerToEdit }) => {
       <DialogContent sx={{ width: '400px' }}>
         <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }} onSubmit={handleSubmit(onSubmit)}>
           <Controller
-            name="username"
+            name="name"
             control={control}
             rules={{ required: 'Username is required' }}
             render={({ field, fieldState: { error } }) => (
@@ -47,19 +47,15 @@ const ReaderForm = ({ open, handleClose, onSave, readerToEdit }) => {
             )}
           />
           <Controller
-            name="phone"
+            name="address"
             control={control}
-            rules={{ 
-              required: 'Phone number is required',
-              pattern: {
-                  value: /^0\d{9}$/,
-                  message: 'Invalid phone number'
-              }
+            rules={{
+              required: 'Address is required',
             }}
             render={({ field, fieldState: { error } }) => (
               <TextField
                 {...field}
-                label="Phone"
+                label="Email"
                 error={!!error}
                 helperText={error ? error.message : ''}
                 required

@@ -2,8 +2,12 @@ import React, { createContext, useState, Dispatch, SetStateAction, ReactNode } f
 
 interface ReturnList {
   id: number;
+  idUser: number;
   borrower: string;
   book: string;
+  price: number;
+  quantity: number;
+  borrowDate: string;
   returnDate: string;
 }
 
@@ -20,13 +24,11 @@ const ReturnListProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       id: 1,
       borrower: 'John Doe',
       book: 'The Great Gatsby',
+      quantity: 2,
+      price: 2500,
+      borrowDate: '2024-05-10',
       returnDate: '2024-05-15',
-    },
-    {
-      id: 2,
-      borrower: 'Jane Smith',
-      book: 'To Kill a Mockingbird',
-      returnDate: '2024-04-10',
+      idUser: 999
     }
   ]);
 

@@ -1,7 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { Box, TextField } from '@mui/material';
-const Form = ({ onSave, entityToEdit, fields, title, button }) => {
-  const [formState, setFormState] = useState(() => fields.reduce((acc, field) => ({ ...acc, [field.name]: '' }), {}));
+import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import { Box, TextField, Button } from '@mui/material';
+
+// Định nghĩa kiểu cho từng field
+interface Field {
+  name: string;
+  label: string;
+  type?: string;
+  required?: boolean;
+  autoComplete?: string;
+}
+
+// Định nghĩa kiểu cho props
+interface FormProps {
+  onSave: (formState: Record<string, any>) => void;
+  entityToEdit?: Record<string, any>;
+  fields: Field[];
+  title: string;
+  button: string;
+}
+
+const Form: React.FC<FormProps> = ({ onSave, entityToEdit, fields, title, button }) => {
+  const [formState, setFormState] = useState<Record<string, any>>(() => 
+    fields.reduce((acc, field) => ({ ...acc, [field.name]: '' }), {})
+  );
 
   useEffect(() => {
     if (entityToEdit) {
@@ -11,36 +32,36 @@ const Form = ({ onSave, entityToEdit, fields, title, button }) => {
     }
   }, [entityToEdit, fields]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormState((prevState) => ({ ...prevState, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSave(formState);
   };
 
   return (
-            <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', justifyContent: 'center'}}>
-                <h2>{title}</h2>
-                {fields.map((field) => (
-                    <TextField
-                    key={field.name}
-                    label={field.label}
-                    name={field.name}
-                    value={formState[field.name]}
-                    type={field.type || 'text'}
-                    onChange={handleChange}
-                    required={field.required || false}
-                    fullWidth
-                    autoComplete={field.autoComplete || 'off'}
-
-                    />
-                ))}
-                <button>{button}</button>
-
-            </Box>
+    <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', justifyContent: 'center' }}>
+      <h2>{title}</h2>
+      {fields.map((field) => (
+        <TextField
+          key={field.name}
+          label={field.label}
+          name={field.name}
+          value={formState[field.name]}
+          type={field.type || 'text'}
+          onChange={handleChange}
+          required={field.required || false}
+          fullWidth
+          autoComplete={field.autoComplete || 'off'}
+        />
+      ))}
+      <Button type="submit" variant="contained" color="primary">
+        {button}
+      </Button>
+    </Box>
   );
 };
 

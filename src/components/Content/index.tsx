@@ -14,7 +14,7 @@ const Content = () => {
   const { books } = context;
   const [searchResults, setSearchResults] = useState(books);
 
-  const handleSearchProduct = (searchTerm) => {
+  const handleSearchProduct = (searchTerm: string) => {
     const results = books.filter(product =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -25,12 +25,12 @@ const Content = () => {
   };
   return (
     <div style={{display: 'flex', backgroundColor: '#F0FFFF' }}>
-      <div style={{ width: '20%', backgroundColor: '#DCDCDC', margin: '20px'  }}>
+      <div style={{ width: '20%', backgroundColor: '#DCDCDC', margin: '20px', borderRadius:'0px 50px 0px 50px' }}>
         <LeftMenu />
       </div>
       <div style={{ width: '80%' }}>
         <Box className='searchinput' style={{ margin:'20px 20px 20px 850px'}}>
-          <SearchInputBase onSearch={handleSearchProduct} />
+          <SearchInputBase placehoder='Search Product' onSearch={handleSearchProduct} />
         </Box>
         <ProductList productList={searchResults} />
       </div>

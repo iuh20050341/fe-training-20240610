@@ -4,19 +4,21 @@ import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AccountContext, AccountContextType } from '../../contexts/Account/index.tsx';
 import { useContext, useState, useEffect } from 'react';
 import AccountMenu from '../../components/AccountMenu/index.tsx';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 const Header = () => {
   const context = useContext(AccountContext) as AccountContextType;
   if (!context) {
     throw new Error('Errors');
   }
-  const { isLoggedIn, setIsLoggedIn, loggedID, accounts } = context;
+  const { isLoggedIn, setIsLoggedIn, loggedID, accounts, rulesID } = context;
   const [showButtons, setShowButtons] = useState(false);
   const user = accounts.find(account => account.id === loggedID);
-  const userName = user?.username 
+  const userName = user?.name
   const getFirstLetter = (username: string | undefined): string => {
     if (!username) {
       return ''; 
@@ -25,11 +27,13 @@ const Header = () => {
     // Trả về ký tự đầu tiên của chuỗi username
     return username.charAt(0);
   };
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (isLoggedIn) {
       const timer = setTimeout(() => {
         setShowButtons(true);
-      }, 1500);
+      }, 1000);
       return () => clearTimeout(timer);
     }
     else {
@@ -37,8 +41,14 @@ const Header = () => {
     }
   }, [isLoggedIn]);
   const handleLogout = () =>{
-    setIsLoggedIn(false)
+    setTimeout(() => {
+      localStorage.removeItem('token'); // Xóa token từ localStorage
+      navigate('/'); 
+      setIsLoggedIn(false)
+      toast.success('Đăng xuất thành công!');
+    }, 1500);
   }
+  
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
@@ -49,12 +59,19 @@ const Header = () => {
             </Link>
           </Typography>
           <Button color="inherit" component={Link} to="/">Home</Button>
-          {isLoggedIn && showButtons && (
+          {isLoggedIn && showButtons && ( 
             <React.Fragment>
-              <Button color="inherit" component={Link} to="/books">Book Management</Button>
-              <Button color="inherit" component={Link} to="/readers">Reader Management</Button>
+              {rulesID === 4 ? (
+                <>
+                  <Button color="inherit" component={Link} to="/books">Book Management</Button>
+                  <Button color="inherit" component={Link} to="/readers">Reader Management</Button>
+                  <Button color="inherit" component={Link} to="/tickets">Ticket Management</Button>
+                </>
+                 ) : (
+                <Button color="inherit" component={Link} to="/return">Return Book</Button>
+                )}
               {/* <Button color="inherit" component={Link} to="/borrow">Borrow Book</Button> */}
-              <Button color="inherit" component={Link} to="/return">Return Book</Button>
+
               <AccountMenu name={getFirstLetter(userName)} logout={handleLogout}/>
             </React.Fragment>
           )}
