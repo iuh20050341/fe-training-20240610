@@ -43,6 +43,7 @@ const ReturnManagementList = () => {
     },
     retry: false,
   });
+
   // const { data: fetchedTickets = [], refetch } = useQuery<Tickets[], Error>({
   //   queryKey: ["tickets"],
   //   queryFn: async () => {
@@ -56,6 +57,7 @@ const ReturnManagementList = () => {
   //   },
   //   retry: false, // Không retry khi có lỗi
   // });
+
   const totalPages = Math.ceil(fetchedTickets.length / pageSize);
 
   const { loggedID } = contextAccount;
