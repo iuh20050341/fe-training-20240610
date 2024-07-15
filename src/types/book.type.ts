@@ -7,6 +7,7 @@ export interface Books {
   price: number,
   amount: number,
   imgUrl: string,
+  imgBase64: string,
   description: string,
   createdAt: string,
   updatedAt: string,

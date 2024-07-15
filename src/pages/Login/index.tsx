@@ -8,8 +8,12 @@ import { AccountContext, AccountContextType } from '../../contexts/Account/index
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import loginApi from '../../api/loginApi.ts';
+import { QueryClient, useMutation } from '@tanstack/react-query';
+import { Logins } from '../../types/login.type.ts';
+import axios from 'axios';
 
 function SignupForm() {
+  const queryClient = new QueryClient()
   const context = useContext(AccountContext) as AccountContextType;
   if (!context) {
     throw new Error('Errors');
@@ -39,33 +43,64 @@ function SignupForm() {
   //   }
   //   console.log('Form Data:', data);
   // };
-  const onSubmit = async (data) => {
-    try {
-      const response = await loginApi.add(data.username, data.password);
-      if (response) {
-        console.log('Login',response);
 
+  const loginMutation = useMutation({
+  mutationFn: (login: Logins) => loginApi.add(login),
+  onSuccess: (response) =>{
       const token = response.data.data.access_token;
-      console.log('Tokennnnn',token);
+      console.log('Token:',token);
       
       localStorage.setItem('token', token); // Lưu token vào localStorage
       setIsLoggedIn(true);
       setLoggedID(response.data.data.user.id)
-      setRulesID(response.data.data.user.role.id)      
-      setTimeout(() => {
+      setRulesID(response.data.data.user.role.id)   
+    setTimeout(() => {
         navigate('/');
-        toast.success('Đăng nhập thành công');
-        }, 1500);
+        toast.success('Đăng nhập thành công!');
+    },1500)
+    queryClient.invalidateQueries({ queryKey: ['logins'] });
+  },
+  onError: (error) => {
+    if (axios.isAxiosError(error) && error.response) {
+        setTimeout(() => {
+            if(error.response){
+                toast.error(error.response.data.message);
+            }
+        },1500)
       } else {
-        toast.error('Tên đăng nhập hoặc mật khẩu không đúng');
+        setTimeout(() => {
+            toast.error('Có lỗi xảy ra!');
+        },1500)
       }
-    } catch (error) {
-      toast.error('Error');
-    }
-    console.log('Form Data:', data);
+  }
+})
+
+  const onSubmit = async (data) => {
+    loginMutation.mutate(data)
+    // try {
+    //   const response = await loginApi.add(data.username, data.password);
+    //   if (response) {
+
+    //   const token = response.data.data.access_token;
+    //   console.log('Token:',token);
+      
+    //   localStorage.setItem('token', token); // Lưu token vào localStorage
+    //   setIsLoggedIn(true);
+    //   setLoggedID(response.data.data.user.id)
+    //   setRulesID(response.data.data.user.role.id)      
+    //   setTimeout(() => {
+    //     navigate('/');
+    //     toast.success('Đăng nhập thành công');
+    //     }, 1500);
+    //   } else {
+    //     toast.error('Tên đăng nhập hoặc mật khẩu không đúng');
+    //   }
+    // } catch (error) {
+    //   toast.error(error.message);
+    // }
   };
 
-  return (
+  return (  
     <Container maxWidth="sm">
       <Paper elevation={3} sx={{ padding: 4, marginTop: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
@@ -75,7 +110,7 @@ function SignupForm() {
           <Box display="flex" flexDirection="column" gap={2}>
             <TextField 
               id="username" 
-              label="Username" 
+              label="Email" 
               variant="outlined" 
               {...register('username', { required: 'Username is required' })} 
               error={!!errors.username}

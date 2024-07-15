@@ -1,8 +1,8 @@
+//chrome.exe --disable-web-security --user-data-dir=c:\my-chrome-data\data
 import axios from "axios"
 
-
 const axiosClient = axios.create({
-    baseURL:"http://10.66.6.33:8080/api/v1",
+    baseURL:"http://10.66.8.93:8080/api/v1",
     headers:{
         'Content-Type': "application/json",
     }

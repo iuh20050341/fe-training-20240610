@@ -1,10 +1,10 @@
 import axiosClient from "./axiosClient";
-import { Login } from "../types/login.type"
+import { Login, Logins } from "../types/login.type"
 
 const loginApi = {
-    add(username: string, password: string){
+    add(data: Logins){
         const url = "/auth/login";
-        return axiosClient.post<Login>(url, {username, password})
+        return axiosClient.post(url, data)
     }
 };
 export default loginApi;

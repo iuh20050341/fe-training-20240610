@@ -1,6 +1,6 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './pages/Header/index.tsx';
+import Header from './components/Header/index.tsx';
 import Home from './pages/Home/index.tsx'
 import Footer from './pages/Footer/index.tsx';
 import BookManagement from './pages/BookManagement/index.tsx';
@@ -19,9 +19,9 @@ import ReturnListProvider from './contexts/ReturnedList/index.tsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import UserProfile from './pages/UserProfile/ProfileDetails/index.tsx';
-
 import ChatBotIcon from './components/Chatbot/index.tsx'
 import TicketProvider from './contexts/Ticket/index.tsx';
+
 // import { useEffect, useState } from 'react';
 // import productApi from './api/productApi.ts';
 function App() {
@@ -35,12 +35,13 @@ function App() {
   //   fetchProducts()
   // },[]);
   // console.log('Data real',datas);
+
   return (
     <div className="app-container">
       <AccountProvider>
-
       <ToastContainer />
       <Router>
+
         <Header />
         <main className="content">
           <TicketProvider>

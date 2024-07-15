@@ -1,7 +1,5 @@
-import React, { createContext, useState, Dispatch, SetStateAction, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, Dispatch, SetStateAction, ReactNode } from 'react';
 import { Users } from '../../types/user.type';
-import { useQuery } from '@tanstack/react-query';
-import userApi from '../../api/userApi.ts';
 
 export interface AccountContextType {
   accounts: Users[];
@@ -17,19 +15,26 @@ export interface AccountContextType {
 export const AccountContext = createContext<AccountContextType | undefined>(undefined);
 
 const AccountProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { data: fetchedUsers = [], refetch } = useQuery<Users[], Error>({
-    queryKey: ['users'],
-    queryFn: () => userApi.getAll().then(response => response.data.data.result),
-    refetchOnWindowFocus: true,
-  });
 
-  const [accounts, setAccounts] = useState<Users[]>(fetchedUsers); // Initialize with fetchedUsers
 
-  useEffect(() => {
-    if (fetchedUsers.length > 0) {
-      setAccounts(fetchedUsers);
+  const [accounts, setAccounts] = useState<Users[]>([
+    {
+      id: 0,
+      name: 'Nam',
+      email: 'tranquynhnam@gmail.com',
+      gender: "MALE",
+      address: "DT",
+      age: 22,
+      createAt: "asdas",
+      updateAt: "sadasd",
+      role:
+      {
+        id: 1,
+        name: "asd",
+      }
     }
-  }, [fetchedUsers]);
+  ]); // Initialize with fetchedUsers
+
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [loggedID, setLoggedID] = useState<number | null>(null);

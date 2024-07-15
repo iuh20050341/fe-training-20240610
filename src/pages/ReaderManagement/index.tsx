@@ -1,20 +1,30 @@
-import React, { useEffect, useContext, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Container, Box, Button } from '@mui/material';
 import ReaderForm from './ReaderForm/index.tsx';
 import ReaderList from './ReaderList/index.tsx';
-import { AccountContext, AccountContextType } from '../../contexts/Account/index.tsx';
 import SearchInputBase from '../../components/Input/Search/index.tsx';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Users } from '../../types/user.type';
+import { Users, User } from '../../types/user.type';
 import userApi from '../../api/userApi.ts';
+import { useMutation, useQuery, QueryClient } from '@tanstack/react-query';
 
 const ReaderManagement = () => {
-  const context = useContext(AccountContext) as AccountContextType;
-  if (!context) {
-    throw new Error('ReaderManagement must be used within an AccountProvider');
-  }
-  const { accounts, setAccounts } = context;
+  const queryClient = new QueryClient()
+  const [fetchError, setFetchError] = useState(false);
+  const { data: fetchedUsers = [], refetch } = useQuery<Users[], Error>({
+    queryKey: ['users'],
+    queryFn: async () => {
+      try {
+        const response = await userApi.getAll();
+        return response.data.data.result;
+      } catch (error) {
+        setFetchError(true);
+        throw error;
+      }
+    },
+    retry: false,
+  });
 
   const columns = [
     { field: 'id', headerName: 'ID' },
@@ -22,32 +32,51 @@ const ReaderManagement = () => {
     { field: 'email', headerName: 'Email' },
     { field: 'address', headerName: 'Address' },
   ];
-
+  
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [readerToEdit, setReaderToEdit] = useState<Users | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [filteredAccounts, setFilteredAccounts] = useState(accounts);
+  const [filteredAccounts, setFilteredAccounts] = useState(fetchedUsers);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
   useEffect(() => {
-    if (accounts && accounts.length > 0) {
-      setFilteredAccounts(
-        accounts.filter(
-          (account) =>
-            account.name.toLowerCase().includes(searchQuery.toLowerCase()) && account.role?.id === 3
-        )
+    if (fetchError) return;
+    if (fetchedUsers && fetchedUsers.length > 0) {
+      const results = fetchedUsers.filter(
+        (account) =>
+          account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          account.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          account.email.toLowerCase().includes(searchQuery.toLowerCase())
       );
+      setFilteredAccounts(results);
     }
-  }, [accounts, searchQuery]);
+  }, [fetchedUsers, searchQuery, fetchError]);
 
   const handleFormClose = () => {
     setIsFormOpen(false);
-  };
-
+  }; 
+  const updateUserMutation = useMutation({
+    mutationFn: ({ data }: { data }) => userApi.update(data),
+    onSuccess: (updatedData) => {
+      console.log(updatedData);
+      
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Cập nhật thành công');
+      refetch(); 
+      // setFilteredAccounts(prevAccounts => prevAccounts.map(account =>
+      //   account.id === updatedData.data.id ? { ...account, ...updatedData.data } : account
+      // ));
+    },
+    onError: (error: any) => {
+      toast.error(`Cập nhật thất bại: ${error.message}`);
+    }
+  });
   const handleSaveReader = (reader: Users) => {
     if (readerToEdit && readerToEdit.id) {
-      setAccounts(accounts.map((b) => (b.id === readerToEdit.id ? { ...b, ...reader } : b)));
+      const updatedReader = { ...reader, id: readerToEdit.id };      
+      updateUserMutation.mutate({ data: updatedReader });
+      
     }
     handleFormClose();
   };
@@ -56,26 +85,43 @@ const ReaderManagement = () => {
     try {
       const response = await userApi.get(id as string);
       setReaderToEdit(response.data.data);
+      console.log(response.data.data);
+      
       setIsFormOpen(true);
     } catch (error) {
       console.error("Failed to fetch user", error);
     }
   };
 
-  const handleDeleteReader = (id: number) => {
+  const mutationDelete = useMutation({
+    mutationFn: (id: number | string) => userApi.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      refetch(); 
+
+    },
+    onError: () => {
+      toast.error('Delete thất bại');
+    }
+  });
+  const handleDeleteReader = (id: number | string) => {
     setIsButtonDisabled(true);
-    setAccounts(accounts.filter((reader) => reader.id !== id));
-    setTimeout(() => {
-      setIsButtonDisabled(false);
-      toast.success('Delete thành công');
-    }, 1500);
+
+    mutationDelete.mutate(id, {
+      onSuccess: () => {
+        setTimeout(() => {
+          setIsButtonDisabled(false);
+          toast.success('Delete thành công');
+          }, 1500);
+      },
+    });
   };
 
   const handleSearch = (searchTerm: string) => {
     setCurrentPage(1); // Reset to the first page when searching
-    const results = accounts.filter(
+    const results = filteredAccounts.filter(
       (account) =>
-        account.name.toLowerCase().includes(searchTerm.toLowerCase()) && account.role?.id === 3
+        (account.name.toLowerCase().includes(searchQuery.toLowerCase()) || account.address.toLowerCase().includes(searchQuery.toLowerCase()) || account.email.toLowerCase().includes(searchQuery.toLowerCase())) && account.role?.id === 3
     );
     setFilteredAccounts(results);
     setSearchQuery(searchTerm);
@@ -87,14 +133,13 @@ const ReaderManagement = () => {
     <Container>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 2 }}>
         <SearchInputBase onSearch={handleSearch} placehoder='Search Reader' />
-        <Button variant="contained" color="success" onClick={() => setIsFormOpen(true)}>
+        {/* <Button variant="contained" color="success" onClick={() => setIsFormOpen(true)}>
           Add Reader
-        </Button>
+        </Button> */}
       </Box>
       <ReaderList isButtonDisabled={isButtonDisabled} readers={filteredAccounts} onDelete={handleDeleteReader} onAction={actionList} currentPage={currentPage} setCurrentPage={setCurrentPage} onEdit={handleEditReader} heads={columns} />
       <ReaderForm open={isFormOpen} handleClose={handleFormClose} onSave={handleSaveReader} readerToEdit={readerToEdit} />
     </Container>
   );
 };
-
 export default ReaderManagement;

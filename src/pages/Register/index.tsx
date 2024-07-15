@@ -9,16 +9,20 @@ import { AccountContext, AccountContextType } from '../../contexts/Account/index
 import RadioList from "../../components/Input/Radio/radiolist.tsx"
 import registerApi from '../../api/registerApi.ts';
 import { Register } from '../../types/register.type.ts';
+import axios from 'axios';
+import { QueryClient, useMutation } from '@tanstack/react-query';
 
 type FormStateType = Omit<Register, 'id' | 'createdAt'> | Register
 function SignupForm() {
+  const queryClient = new QueryClient()
+
   const context = useContext(AccountContext) as AccountContextType;
   if (!context) {
     throw new Error('Errors');
   }
   const { accounts, setAccounts } = context;
 
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormStateType>({
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormStateType>({
     defaultValues: {
       name: '',
       password: '',
@@ -30,26 +34,53 @@ function SignupForm() {
   });
   
   const navigate = useNavigate();
+
   const handleGenderChange = (value: string) => {
     setValue('gender', value);
   };
-  const onSubmit = async (data: FormStateType) => {
-    try {
-      const response = await registerApi.add(data);
-      if (response) {
-        console.log('Register',response);
-        
-        setTimeout(() => {
+
+  const registerMutation = useMutation({
+    mutationFn: (register: Omit<Register, "id" | "createdAt">) => registerApi.add(register),
+    onSuccess: (response) =>{        
+      setTimeout(() => {
           navigate('/login');
-          toast.success('Đăng ký thành công');
-        }, 1500);
-      } else {
-        toast.error('Đăng ký thất bại');
-      }
-    } catch (error) {
-      toast.error('Đăng ký thất bại');
+          toast.success('Đăng ký thành công!');
+      },1500)
+      queryClient.invalidateQueries({ queryKey: ['registers'] });
+    },
+    onError: (error) => {
+      if (axios.isAxiosError(error) && error.response) {
+          setTimeout(() => {
+              if(error.response){
+                  toast.error(error.response.data.message);
+              }
+          },1500)
+        } else {
+          setTimeout(() => {
+              toast.error('Có lỗi xảy ra!');
+          },1500)
+        }
     }
+  })
+  const onSubmit = async (data: FormStateType) => {
+    registerMutation.mutate(data)
     console.log('Form Data:', data);
+
+    // try {
+    //   const response = await registerApi.add(data);
+    //   if (response) {
+    //     console.log('Register',response);
+        
+    //     setTimeout(() => {
+    //       navigate('/login');
+    //       toast.success('Đăng ký thành công');
+    //     }, 1500);
+    //   } else {
+    //     toast.error('Đăng ký thất bại');
+    //   }
+    // } catch (error) {
+    //   toast.error('Đăng ký thất bại');
+    // }
     // const userExists = accounts.some(account => account.username === data.username);
     // if (userExists) {
     //   setTimeout(() => {
@@ -69,7 +100,10 @@ function SignupForm() {
     { label: 'Male', value: 'MALE' },
     { label: 'Female', value: 'FEMALE' },
     { label: 'Other', value: 'OTHER' },
-  ];  return (
+  ];  
+  const currentGender = watch('gender');
+
+  return (
     <Container maxWidth="sm">
       <Paper elevation={3} sx={{ padding: 4, marginTop: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
@@ -130,7 +164,12 @@ function SignupForm() {
               label="Age" 
               type="number" 
               variant="outlined" 
-              {...register('age', {required: 'Age is required'})} 
+              {...register('age', {required: 'Age is required',
+                pattern: {
+                  value: /^[1-9]\d*$/,
+                  message: 'Invalid age'
+                }
+              })} 
               error={!!errors.age}
               helperText={errors.age ? errors.age.message : ''}
             />        
@@ -143,7 +182,7 @@ function SignupForm() {
               error={!!errors.address}
               helperText={errors.address ? errors.address.message : ''}
             />        
-            <RadioList label="Gender:" name="gender" items={genderList} onChange={handleGenderChange} />
+            <RadioList label="Gender:" name="gender" items={genderList} onChange={handleGenderChange} value={currentGender} />
             <TextField 
               id="password"   
               type="password" 

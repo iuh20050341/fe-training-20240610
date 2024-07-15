@@ -1,183 +1,222 @@
-import React from 'react';
-import Table from '../../components/Table/index.tsx';
-import { useContext, useState, useEffect, useCallback } from 'react';
-import { BorrowContext } from '../../contexts/Borrow/index.tsx';
-import { Typography, Button, TextField } from '@mui/material';
-import { BookContext } from '../../contexts/Book/index.tsx';
-import { ReturnListContext } from '../../contexts/ReturnedList/index.tsx';
-import { AccountContext, AccountContextType } from '../../contexts/Account/index.tsx';
-import { TicketContext, TicketContextType } from '../../contexts/Ticket/index.tsx';
-import { toast } from 'react-toastify';
-import CustomizedDialogs from '../../components/ModalDialog/index.tsx'
-import 'react-toastify/dist/ReactToastify.css';
-import ReturnedList from './ReturnedList.tsx';
+import React from "react";
+import Table from "../../components/Table/index.tsx";
+import { useContext, useState, useEffect } from "react";
+import { Typography, Button, TextField } from "@mui/material";
+import {
+  AccountContext,
+  AccountContextType,
+} from "../../contexts/Account/index.tsx";
+import { toast } from "react-toastify";
+import CustomizedDialogs from "../../components/ModalDialog/index.tsx";
+import "react-toastify/dist/ReactToastify.css";
+import ReturnedList from "./ReturnedList.tsx";
+import { QueryClient, useMutation, useQuery } from "@tanstack/react-query";
+import { TicketReturn, Tickets } from "../../types/ticket.type.ts";
+import ticketApi from "../../api/ticketApi.ts";
+import axios from "axios";
+import totalApi from "../../api/totalPriceApi.ts";
+import { useQueryString } from "../../utils/utils.ts";
 
+const queryClient = new QueryClient();
+const pageSize = 5;
 const ReturnManagementList = () => {
-    const context = useContext(BorrowContext);
-    if (!context) {
-      throw new Error('ReturnManagementList must be used within a BorrowProvider');
-    }
-    const contextBook = useContext(BookContext);
-      if (!contextBook) {
-        throw new Error('Error');
-    }
-    const contextReturn = useContext(ReturnListContext);
-    if (!contextReturn) {
-      throw new Error('ReturnManagementList must be used within a BorrowProvider');
-    }
-    const contextAccount = useContext(AccountContext) as AccountContextType;
-    if (!contextAccount) {
-    throw new Error('Errors');
-    }
-    const contextTicket = useContext(TicketContext) as TicketContextType;
-    if (!contextTicket) {
-      throw new Error('ERROR!');
-    }
-    const { tickets, setTickets} = contextTicket;
-    const { borrowedBooks, setBorrowedBooks } = context;
-    const { books, setBooks } = contextBook;
-    const { loggedID } = contextAccount;
-    const [returnList, setReturnList] = useState(borrowedBooks.filter(book => book.idUser === loggedID));
-    const [currentPage, setCurrentPage] = useState(1);
-    const { returnLists, setReturnLists } = contextReturn;
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const contextAccount = useContext(AccountContext) as AccountContextType;
+  if (!contextAccount) {
+    throw new Error("Errors");
+  }
+  const [fetchError, setFetchError] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [returnList, setReturnList] = useState<Tickets[]>([]);
+  const queryString: { pageNumber?: string } = useQueryString();
+  const pageNumber = Number(queryString.pageNumber) || 1;
 
-    const columns = [
-        { field: 'id', headerName: 'ID' },
-        { field: 'borrower', headerName: 'Borrower' },
-        { field: 'book', headerName: 'Book' },
-        { field: 'price', headerName: 'Price' },      
-        { field: 'quantity', headerName: 'Quantity' },      
-        { field: 'borrowDate', headerName: 'BorrowDate' },      
-        { field: 'totalPrice', headerName: 'TotalPriceNow' }      
+  const { data: fetchedTickets = [], refetch } = useQuery<Tickets[], Error>({
+    queryKey: ["tickets", pageNumber, searchQuery],
+    queryFn: async () => {
+      try {
+        const response = await ticketApi.getAll(pageNumber, pageSize);
+        return response.data.data.result || [];
+      } catch (error) {
+        setFetchError(true);
+        throw error;
+      }
+    },
+    retry: false,
+  });
+  // const { data: fetchedTickets = [], refetch } = useQuery<Tickets[], Error>({
+  //   queryKey: ["tickets"],
+  //   queryFn: async () => {
+  //     try {
+  //       const response = await ticketApi.getAll();
+  //       return response.data.data.result || [];
+  //     } catch (error) {
+  //       setFetchError(true);
+  //       throw error;
+  //     }
+  //   },
+  //   retry: false, // Không retry khi có lỗi
+  // });
+  const totalPages = Math.ceil(fetchedTickets.length / pageSize);
 
-      ];
-      
-      const actionList =[
-        'Return'
-      ]
-      console.log(loggedID);
-      const handleReturnBook = (id, bookName, borrower, quantity, price, borrowDate) => {
-        setIsButtonDisabled(true);
-        const toDate = new Date().toISOString().split('T')[0]; // Lấy ngày hiện tại theo định dạng YYYY-MM-DD
-        const updatedBooks = borrowedBooks.filter(book => book.id !== id);
-        const updateTickets = tickets.map(ticket => {
-          if(ticket.borrowID === id){
-            return { ...ticket, returnDate: toDate, status: true}
-          }
-          return  ticket;
-        })
-        const updatedQuantityBooks = books.map(book => {
-          if (book.name === bookName) {
-              return { ...book, quantity: book.quantity + quantity };
-          }
-          return book;
-        })
-        const maxId = returnLists.length > 0 ? Math.max(...returnLists.map(book => book.id)) : 0;
-          const newEntry = {
-            id: maxId + 1,
-            idUser: Number(loggedID),
-            borrower: borrower,
-            quantity: quantity,
-            price: price,
-            book: bookName,
-            borrowDate: borrowDate,
-            returnDate: toDate
-          };
-        setBorrowedBooks(updatedBooks);
-        setBooks(updatedQuantityBooks);
-        setTickets(updateTickets)
-        setReturnLists([
-          ...returnLists,
-          newEntry,
-        ]);
+  const { loggedID } = contextAccount;
+
+  useEffect(() => {
+    if (!fetchError) {
+      const filteredTickets = fetchedTickets.filter(
+        (ticket) => ticket.userId === loggedID && ticket.status === "BORROWING"
+      );
+      setReturnList(filteredTickets);
+    }
+  }, [fetchedTickets, loggedID, fetchError]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+
+  const columns = [
+    { field: "id", headerName: "ID" },
+    { field: "name", headerName: "Borrower" },
+    { field: "title", headerName: "Book" },
+    { field: "borrowDate", headerName: "BorrowDate" },
+  ];
+
+  const actionList = ["Return"];
+
+  const totalPriceMutation = useMutation({
+    mutationFn: (id: number | string) => totalApi.total(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["ticketdetails"] });
+    },
+    onError: (error) => {
+      if (axios.isAxiosError(error) && error.response) {
         setTimeout(() => {
-          toast.success('Trả sách thành công')
-          setIsButtonDisabled(false);
-        }, 2000);
-      };
-      const handleFilter = useCallback(() => {
-        if ((startDate && !endDate) || (!startDate && endDate)) {
-          setTimeout(() => {
-            toast.error('Vui lòng nhập đầy đủ ngày bắt đầu và ngày kết thúc!')
-          }, 1000);          
-          return;
-        }
-        if (!startDate && !endDate && !searchQuery){
-          setTimeout(() => {
-            toast.error('Vui lòng nhập đầy đủ thông tin tìm kiếm!')
-          }, 1000);          
-          return;
-        }
-          const filteredBooks = returnList.filter(book => {
-          const borrowDate = new Date(book.borrowDate);
-          const start = startDate ? new Date(startDate) : null;
-          const end = endDate ? new Date(endDate) : null;
-          const search = searchQuery.toLowerCase();
+          if (error.response) {
+            toast.error(error.response.data.message);
+          }
+        }, 1500);
+      } else {
+        setTimeout(() => {
+          toast.error("Có lỗi xảy ra!");
+        }, 1500);
+      }
+    },
+    onSettled: (data, error) => {
+      console.log("Kết quả:", { data, error });
+    },
+  });
 
-          const matchesSearch = search ? book.borrower.toLowerCase().includes(search) || book.book.toLowerCase().includes(search) : true;
-          const matchesDateRange = (!start || borrowDate >= start) && (!end || borrowDate <= end);
-    
-          return matchesSearch && matchesDateRange;
-        });
-    
-        setReturnList(filteredBooks);
-      }, [returnList, searchQuery, startDate, endDate]);
+  const returnTicketMutation = useMutation({
+    mutationFn: (ticket: TicketReturn) => ticketApi.update(ticket),
+    onSuccess: (response) => {
+      setTimeout(() => {
+        toast.success("Trả sách thành công!");
+      }, 1500);
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      totalPriceMutation.mutate(response.data.id);
+      refetch();
+    },
+    onError: (error) => {
+      if (axios.isAxiosError(error) && error.response) {
+        setTimeout(() => {
+          if (error.response) {
+            toast.error(error.response.data.message);
+          }
+        }, 1500);
+      } else {
+        setTimeout(() => {
+          toast.error("Có lỗi xảy ra!");
+        }, 1500);
+      }
+    },
+  });
 
-      useEffect(() => {
-          setReturnList(borrowedBooks.filter(book => book.idUser === loggedID))
-      },[borrowedBooks, loggedID])
+  const toDate = new Date().toISOString().split("T")[0]; // Lấy ngày hiện tại theo định dạng YYYY-MM-DD
 
-      const handleReset = () => {
-        setStartDate('');
-        setEndDate('');
-        setSearchQuery('');
-        setReturnList(borrowedBooks.filter(book => book.idUser === loggedID))
-      };
+  const handleReturnBook = (ticket) => {
+    const updateTicket: TicketReturn = {
+      id: ticket.id,
+      returnDate: toDate,
+      status: "RETURNED",
+    };
+    returnTicketMutation.mutate(updateTicket);
+  };
+
+  const handleReset = () => {
+    setStartDate("");
+    setEndDate("");
+    setSearchQuery("");
+    setReturnList(
+      fetchedTickets.filter(
+        (ticket) => ticket.userId === loggedID && ticket.status === "BORROWING"
+      )
+    );
+  };
+
   return (
     <div>
-        <Typography variant="h4" gutterBottom>
-            Return Management
+      <Typography variant="h4" gutterBottom>
+        Return Management
       </Typography>
-      <div className="filter-inputs" style={{marginLeft:'20px', marginBottom:'20px'}}>
-          <TextField
-            type="date"
-            label="Start Date"
-            InputLabelProps={{ shrink: true }}
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            style={{ marginRight: '10px' }}
+      <div
+        className="filter-inputs"
+        style={{ marginLeft: "20px", marginBottom: "20px" }}
+      >
+        <TextField
+          type="date"
+          label="Start Date"
+          InputLabelProps={{ shrink: true }}
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          style={{ marginRight: "10px" }}
+        />
+        <TextField
+          type="date"
+          label="End Date"
+          InputLabelProps={{ shrink: true }}
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          style={{ marginRight: "10px" }}
+        />
+        <TextField
+          label="Search by Borrower or Book"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ marginLeft: "10px" }}
+        />
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleReset}
+          style={{ marginLeft: "10px", marginTop: "10px" }}
+        >
+          Reset
+        </Button>
+        <div style={{ marginTop: "20px" }}>
+          <CustomizedDialogs
+            button="Returned List"
+            title="Returned List"
+            action=""
+            handleSave={() => {}}
+            content={<ReturnedList />}
           />
-          <TextField
-            type="date"
-            label="End Date"
-            InputLabelProps={{ shrink: true }}
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            style={{ marginRight: '10px' }}
-          />
-          <TextField
-            label="Search by Borrower or Book"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ marginLeft: '10px' }}
-          />
-          <Button variant="contained" color="primary" onClick={handleFilter} style={{marginLeft:'10px', marginTop:'10px'}}>
-            Filter
-          </Button>
-          <Button variant="contained" color="secondary" onClick={handleReset} style={{marginLeft:'10px', marginTop:'10px'}}>
-            Reset
-          </Button>
-          <div style={{marginTop:'20px'}}>
-            <CustomizedDialogs button='Returned List' title='Returned List' action='' handleSave={() =>{}} content={<ReturnedList />} />
-          </div>
         </div>
-        <Table  isButtonDisabled={isButtonDisabled} columns={columns} data={returnList} onEdit={''} onDelete={''} onRead={''} onReturn={handleReturnBook} onAction={actionList} currentPage={currentPage} setCurrentPage={setCurrentPage}  />
+      </div>
+      <Table
+        isButtonDisabled={isButtonDisabled}
+        columns={columns}
+        data={returnList}
+        onEdit={""}
+        onDelete={""}
+        onRead={""}
+        onReturn={handleReturnBook}
+        onAction={actionList}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        totalPages={totalPages}
+      />
     </div>
-);
+  );
 };
 
 export default ReturnManagementList;

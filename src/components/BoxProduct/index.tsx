@@ -15,7 +15,7 @@ const BoxProduct: React.FC<BoxProductProps> = ({ image, name }) => {
           <CardMedia
             component="img"
             height="240"
-            image={image}
+            image={`data:image/png;base64,${image}`}
             alt={name}
             style={{ marginTop: '10px' }}
           />

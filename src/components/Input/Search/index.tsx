@@ -41,5 +41,4 @@ const SearchInputBase: React.FC<SearchInputBaseProps> = ({ onSearch, placehoder 
     </Paper>
   );
 };
-
 export default SearchInputBase;

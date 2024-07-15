@@ -1,0 +1,22 @@
+/* styles.css */
+.button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    background-color: #e0e0e0;
+    color: black;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s; /* Tạo hiệu ứng chuyển đổi mượt */
+  }
+  
+  .button:hover {
+    background-color: rgb(151, 201, 153);
+    color: white;
+  }
+  
+  .button.active {
+    background-color: #4caf50;
+    color: white;
+  }
+  

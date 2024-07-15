@@ -4,12 +4,13 @@ import { formatCurrency } from '../../../utils/formatCurrency.ts';
 
 const ConfirmBorrow = ({ book, quantity }) => {
   const toDate = new Date().toISOString().split('T')[0]; // Lấy ngày hiện tại theo định dạng YYYY-MM-DD
+  
   return (
     <React.Fragment>
       <DialogContent sx={{ width: '400px' }}>
       <Box sx={{ padding: 2, border: '1px solid #ccc', borderRadius: 4, maxWidth: 400 }}>
       <Typography variant="body1">
-        <strong>Tên sách:</strong> {book.name}
+        <strong>Tên sách:</strong> {book.title}
       </Typography>
       <Typography variant="body1">
         <strong>Giá:</strong> {formatCurrency(book.price)}

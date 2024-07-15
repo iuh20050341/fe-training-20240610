@@ -14,4 +14,4 @@ export interface Users {
     role: Roles
     }
     
-    export type User = Pick<Users, 'id' | 'name' | 'email' | 'address'|'role'>[]
+    export type User = Omit<Users, 'id'| 'email' |'createAt'|'updatedAt'|'role'>[]
